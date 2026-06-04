@@ -28,6 +28,9 @@ jobs:
       - name: Show Flutter version
         run: flutter --version
 
+      - name: Generate missing Android project
+        run: flutter create --platforms=android .
+
       - name: Install dependencies
         run: flutter pub get
 
