@@ -23,7 +23,10 @@ class MiAhorroApp extends StatelessWidget {
       title: 'Mi Ahorro',
       theme: ThemeData(
         brightness: Brightness.dark,
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff22c55e), brightness: Brightness.dark),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xff22c55e),
+          brightness: Brightness.dark,
+        ),
         scaffoldBackgroundColor: const Color(0xff0d1322),
         useMaterial3: true,
       ),
@@ -65,13 +68,24 @@ class _LoginPageState extends State<LoginPage> {
   bool loading = false;
 
   Future<void> auth({required bool register}) async {
+    if (email.text.trim().isEmpty || password.text.trim().length < 6) {
+      _msg('Usá un email válido y una contraseña de mínimo 6 caracteres.');
+      return;
+    }
+
     setState(() => loading = true);
     try {
       if (register) {
-        await supabase.auth.signUp(email: email.text.trim(), password: password.text.trim());
-        if (mounted) _msg('Cuenta creada. Revisá tu mail si pide confirmación.');
+        await supabase.auth.signUp(
+          email: email.text.trim(),
+          password: password.text.trim(),
+        );
+        if (mounted) _msg('Cuenta creada. Si pide confirmación, revisá tu mail.');
       } else {
-        await supabase.auth.signInWithPassword(email: email.text.trim(), password: password.text.trim());
+        await supabase.auth.signInWithPassword(
+          email: email.text.trim(),
+          password: password.text.trim(),
+        );
       }
     } catch (e) {
       if (mounted) _msg('Error: $e');
@@ -94,16 +108,31 @@ class _LoginPageState extends State<LoginPage> {
               children: [
                 const Icon(Icons.attach_money_rounded, size: 76, color: Color(0xff22c55e)),
                 const SizedBox(height: 16),
-                const Text('Mi Ahorro', textAlign: TextAlign.center, style: TextStyle(fontSize: 34, fontWeight: FontWeight.w900)),
+                const Text(
+                  'Mi Ahorro',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 34, fontWeight: FontWeight.w900),
+                ),
                 const SizedBox(height: 8),
-                Text('Tu app nativa para controlar gastos, metas y progreso.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white.withOpacity(.7))),
+                Text(
+                  'Tu app nativa para controlar gastos, metas y progreso.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white.withOpacity(.7)),
+                ),
                 const SizedBox(height: 28),
-                _field(email, 'Email', Icons.mail_outline),
+                _field(email, 'Email', Icons.mail_outline, type: TextInputType.emailAddress),
                 const SizedBox(height: 12),
                 _field(password, 'Contraseña', Icons.lock_outline, obscure: true),
                 const SizedBox(height: 18),
-                FilledButton.icon(onPressed: loading ? null : () => auth(register: false), icon: const Icon(Icons.login), label: Text(loading ? 'Cargando...' : 'Ingresar')),
-                TextButton(onPressed: loading ? null : () => auth(register: true), child: const Text('Crear cuenta nueva')),
+                FilledButton.icon(
+                  onPressed: loading ? null : () => auth(register: false),
+                  icon: const Icon(Icons.login),
+                  label: Text(loading ? 'Cargando...' : 'Ingresar'),
+                ),
+                TextButton(
+                  onPressed: loading ? null : () => auth(register: true),
+                  child: const Text('Crear cuenta nueva'),
+                ),
               ],
             ),
           ),
@@ -113,12 +142,22 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-Widget _field(TextEditingController c, String label, IconData icon, {bool obscure = false, TextInputType? type}) {
+Widget _field(
+  TextEditingController c,
+  String label,
+  IconData icon, {
+  bool obscure = false,
+  TextInputType? type,
+}) {
   return TextField(
     controller: c,
     obscureText: obscure,
     keyboardType: type,
-    decoration: InputDecoration(prefixIcon: Icon(icon), labelText: label, border: OutlineInputBorder(borderRadius: BorderRadius.circular(18))),
+    decoration: InputDecoration(
+      prefixIcon: Icon(icon),
+      labelText: label,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(18)),
+    ),
   );
 }
 
@@ -136,9 +175,11 @@ class _HomePageState extends State<HomePage> {
   int selectedDay = DateTime.now().day;
   bool loading = true;
 
-  final incomeUsd = TextEditingController(text: '0');
+  String incomeCurrency = 'ARS';
+
+  final incomeAmount = TextEditingController(text: '0');
   final exchangeRate = TextEditingController(text: '1428.01');
-  final realSavingUsd = TextEditingController(text: '0');
+  final realSaving = TextEditingController(text: '0');
   final goalName = TextEditingController(text: 'Comprar moto');
   final goalAmount = TextEditingController(text: '0');
   final notes = TextEditingController();
@@ -151,30 +192,43 @@ class _HomePageState extends State<HomePage> {
     'Comida',
     'Transporte',
     'Supermercado',
-    'Avi',
     'Salud',
+    'Educación',
     'Ocio',
     'Servicios',
     'Otros',
   ];
 
   List<Map<String, dynamic>> fixed = [
-    {'icon': '🏠', 'name': 'Alquiler', 'amount': 0.0, 'paid': false},
+    {'icon': '🏠', 'name': 'Alquiler / vivienda', 'amount': 0.0, 'paid': false},
     {'icon': '💡', 'name': 'Luz', 'amount': 0.0, 'paid': false},
-    {'icon': '🎓', 'name': 'Academia Avi', 'amount': 0.0, 'paid': false},
-    {'icon': '🍽️', 'name': 'Menú', 'amount': 0.0, 'paid': false},
-    {'icon': '🏋️', 'name': 'Gimnasio', 'amount': 0.0, 'paid': false},
-    {'icon': '🤖', 'name': 'ChatGPT', 'amount': 0.0, 'paid': false},
+    {'icon': '🌐', 'name': 'Internet', 'amount': 0.0, 'paid': false},
+    {'icon': '📱', 'name': 'Teléfono', 'amount': 0.0, 'paid': false},
+    {'icon': '🛒', 'name': 'Supermercado fijo', 'amount': 0.0, 'paid': false},
+    {'icon': '🧾', 'name': 'Otros fijos', 'amount': 0.0, 'paid': false},
   ];
 
   List<Map<String, dynamic>> dailyExpenses = [];
 
-  final List<String> monthNames = const ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  final List<String> monthNames = const [
+    'Enero',
+    'Febrero',
+    'Marzo',
+    'Abril',
+    'Mayo',
+    'Junio',
+    'Julio',
+    'Agosto',
+    'Septiembre',
+    'Octubre',
+    'Noviembre',
+    'Diciembre',
+  ];
 
   int get daysInMonth => DateUtils.getDaysInMonth(year, month);
-  double get usd => double.tryParse(incomeUsd.text.replaceAll(',', '.')) ?? 0.0;
+  double get rawIncome => double.tryParse(incomeAmount.text.replaceAll(',', '.')) ?? 0.0;
   double get rate => double.tryParse(exchangeRate.text.replaceAll(',', '.')) ?? 0.0;
-  double get incomeArs => usd * rate;
+  double get incomeArs => incomeCurrency == 'USD' ? rawIncome * rate : rawIncome;
   double get fixedTotal => fixed.fold(0.0, (sum, item) => sum + ((item['amount'] as num?)?.toDouble() ?? 0.0));
   double get paidTotal => fixed.where((e) => e['paid'] == true).fold(0.0, (sum, item) => sum + ((item['amount'] as num?)?.toDouble() ?? 0.0));
   double get variableBudget => incomeArs - fixedTotal;
@@ -183,15 +237,15 @@ class _HomePageState extends State<HomePage> {
   double get available => variableBudget - totalDailySpent;
 
   double spentForDay(int day) {
-    return dailyExpenses.where((e) => (e['day'] as num?)?.toInt() == day).fold(0.0, (sum, item) => sum + ((item['amount'] as num?)?.toDouble() ?? 0.0));
-  }
-
-  double spentUntilDay(int day) {
-    return dailyExpenses.where((e) => ((e['day'] as num?)?.toInt() ?? 0) <= day).fold(0.0, (sum, item) => sum + ((item['amount'] as num?)?.toDouble() ?? 0.0));
+    return dailyExpenses
+        .where((e) => (e['day'] as num?)?.toInt() == day)
+        .fold(0.0, (sum, item) => sum + ((item['amount'] as num?)?.toDouble() ?? 0.0));
   }
 
   double adjustedBudgetForDay(int day) {
-    final spentBefore = dailyExpenses.where((e) => ((e['day'] as num?)?.toInt() ?? 0) < day).fold(0.0, (sum, item) => sum + ((item['amount'] as num?)?.toDouble() ?? 0.0));
+    final spentBefore = dailyExpenses
+        .where((e) => ((e['day'] as num?)?.toInt() ?? 0) < day)
+        .fold(0.0, (sum, item) => sum + ((item['amount'] as num?)?.toDouble() ?? 0.0));
     final remainingBeforeToday = variableBudget - spentBefore;
     final remainingDays = (daysInMonth - day + 1).clamp(1, 31).toInt();
     return remainingBeforeToday / remainingDays;
@@ -232,14 +286,28 @@ class _HomePageState extends State<HomePage> {
     setState(() => loading = true);
     try {
       final userId = supabase.auth.currentUser!.id;
-      final row = await supabase.from('finance_months').select().eq('user_id', userId).eq('year', year).eq('month', month).maybeSingle();
+      final row = await supabase
+          .from('finance_months')
+          .select()
+          .eq('user_id', userId)
+          .eq('year', year)
+          .eq('month', month)
+          .maybeSingle();
+
       if (row != null) {
-        incomeUsd.text = '${row['income_usd'] ?? row['income'] ?? 0}';
+        final storedCurrency = '${row['currency'] ?? 'ARS'}';
+        incomeCurrency = storedCurrency == 'USD' ? 'USD' : 'ARS';
+
+        incomeAmount.text = '${row['income_amount'] ?? row['income_usd'] ?? row['income'] ?? 0}';
         exchangeRate.text = '${row['exchange_rate'] ?? 1428.01}';
-        realSavingUsd.text = '${row['real_saving_usd'] ?? row['actual_savings'] ?? 0}';
+        realSaving.text = '${row['real_saving'] ?? row['real_saving_usd'] ?? row['actual_savings'] ?? 0}';
         notes.text = '${row['notes'] ?? ''}';
+
         final rawFixed = row['fixed_expenses'];
-        if (rawFixed is List) fixed = rawFixed.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        if (rawFixed is List && rawFixed.isNotEmpty) {
+          fixed = rawFixed.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        }
+
         final rawDaily = row['daily_expenses'];
         if (rawDaily is List) {
           dailyExpenses = rawDaily.map((e) => Map<String, dynamic>.from(e as Map)).toList();
@@ -260,10 +328,12 @@ class _HomePageState extends State<HomePage> {
         'user_id': userId,
         'year': year,
         'month': month,
-        'currency': 'ARS',
+        'currency': incomeCurrency,
         'exchange_rate': rate,
-        'income_usd': usd,
-        'real_saving_usd': double.tryParse(realSavingUsd.text.replaceAll(',', '.')) ?? 0.0,
+        'income_usd': incomeCurrency == 'USD' ? rawIncome : 0.0,
+        'income_amount': rawIncome,
+        'real_saving_usd': incomeCurrency == 'USD' ? (double.tryParse(realSaving.text.replaceAll(',', '.')) ?? 0.0) : 0.0,
+        'real_saving': double.tryParse(realSaving.text.replaceAll(',', '.')) ?? 0.0,
         'notes': notes.text,
         'fixed_expenses': fixed,
         'daily_expenses': dailyExpenses,
@@ -338,7 +408,10 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget base(Widget child) => RefreshIndicator(onRefresh: loadMonth, child: ListView(padding: const EdgeInsets.all(18), children: [child]));
+  Widget base(Widget child) => RefreshIndicator(
+        onRefresh: loadMonth,
+        child: ListView(padding: const EdgeInsets.all(18), children: [child]),
+      );
 
   Widget inicio() {
     final double paidProgress = fixedTotal == 0.0 ? 0.0 : (paidTotal / fixedTotal).clamp(0.0, 1.0).toDouble();
@@ -346,6 +419,10 @@ class _HomePageState extends State<HomePage> {
     return base(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       monthSelector(),
       const SizedBox(height: 16),
+      card('Ingreso mensual', incomeCurrency == 'USD' ? 'USD ${rawIncome.toStringAsFixed(0)}' : money(rawIncome), Icons.account_balance, const Color(0xff60a5fa)),
+      const SizedBox(height: 12),
+      card('Ingreso para cálculo', money(incomeArs), Icons.currency_exchange, const Color(0xffa78bfa)),
+      const SizedBox(height: 12),
       card('Disponible estimado', money(available), Icons.account_balance_wallet, const Color(0xff22c55e)),
       const SizedBox(height: 12),
       card('Presupuesto diario base', money(dailyBudgetBase), Icons.today, const Color(0xffa78bfa)),
@@ -369,11 +446,23 @@ class _HomePageState extends State<HomePage> {
   Widget mes() => base(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
     monthSelector(),
     const SizedBox(height: 12),
-    _field(incomeUsd, 'Ingreso del mes en USD', Icons.attach_money, type: TextInputType.number),
+    DropdownButtonFormField<String>(
+      value: incomeCurrency,
+      decoration: const InputDecoration(labelText: 'Moneda de ingreso'),
+      items: const [
+        DropdownMenuItem(value: 'ARS', child: Text('Pesos argentinos (ARS)')),
+        DropdownMenuItem(value: 'USD', child: Text('Dólares (USD)')),
+      ],
+      onChanged: (v) => setState(() => incomeCurrency = v ?? 'ARS'),
+    ),
     const SizedBox(height: 12),
-    _field(exchangeRate, 'Tipo de cambio', Icons.currency_exchange, type: TextInputType.number),
+    _field(incomeAmount, 'Ingreso del mes en $incomeCurrency', Icons.attach_money, type: TextInputType.number),
+    if (incomeCurrency == 'USD') ...[
+      const SizedBox(height: 12),
+      _field(exchangeRate, 'Tipo de cambio para convertir a pesos', Icons.currency_exchange, type: TextInputType.number),
+    ],
     const SizedBox(height: 12),
-    _field(realSavingUsd, 'Ahorro real USD', Icons.savings_outlined, type: TextInputType.number),
+    _field(realSaving, 'Ahorro real en $incomeCurrency', Icons.savings_outlined, type: TextInputType.number),
     const SizedBox(height: 12),
     _field(notes, 'Notas rápidas', Icons.note_alt_outlined),
     const SizedBox(height: 18),
@@ -384,6 +473,8 @@ class _HomePageState extends State<HomePage> {
 
   Widget gastos() => base(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
     const Text('Gastos fijos', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+    const SizedBox(height: 6),
+    Text('Todos los gastos se cargan en pesos.', style: TextStyle(color: Colors.white.withOpacity(.65))),
     const SizedBox(height: 12),
     ...fixed.asMap().entries.map((entry) {
       final i = entry.key;
@@ -396,7 +487,7 @@ class _HomePageState extends State<HomePage> {
           subtitle: TextField(
             controller: c,
             keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Monto'),
+            decoration: const InputDecoration(labelText: 'Monto en pesos'),
             onChanged: (v) => fixed[i]['amount'] = double.tryParse(v.replaceAll(',', '.')) ?? 0.0,
           ),
           trailing: Checkbox(value: item['paid'] == true, onChanged: (v) => setState(() => fixed[i]['paid'] = v ?? false)),
@@ -417,6 +508,8 @@ class _HomePageState extends State<HomePage> {
       monthSelector(),
       const SizedBox(height: 12),
       const Text('Carga diaria', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+      const SizedBox(height: 6),
+      Text('Los gastos diarios se cargan en pesos.', style: TextStyle(color: Colors.white.withOpacity(.65))),
       const SizedBox(height: 12),
       DropdownButtonFormField<int>(
         value: selectedDay.clamp(1, daysInMonth).toInt(),
@@ -425,9 +518,7 @@ class _HomePageState extends State<HomePage> {
         onChanged: (v) => setState(() => selectedDay = v ?? selectedDay),
       ),
       const SizedBox(height: 12),
-      Row(children: [
-        Expanded(child: card('Base diario', money(dailyBudgetBase), Icons.today, const Color(0xff60a5fa))),
-      ]),
+      card('Base diario', money(dailyBudgetBase), Icons.today, const Color(0xff60a5fa)),
       const SizedBox(height: 12),
       card('Ajustado/compensado', money(adjusted), Icons.tune, const Color(0xffa78bfa)),
       const SizedBox(height: 12),
@@ -444,7 +535,7 @@ class _HomePageState extends State<HomePage> {
         onChanged: (v) => setState(() => selectedCategory = v ?? selectedCategory),
       ),
       const SizedBox(height: 12),
-      _field(dailyAmount, 'Monto del gasto', Icons.payments_outlined, type: TextInputType.number),
+      _field(dailyAmount, 'Monto del gasto en pesos', Icons.payments_outlined, type: TextInputType.number),
       const SizedBox(height: 12),
       _field(dailyNote, 'Detalle opcional', Icons.edit_note),
       const SizedBox(height: 12),
@@ -495,7 +586,11 @@ class _HomePageState extends State<HomePage> {
       if (totals.isEmpty) Text('Todavía no hay gastos diarios cargados.', style: TextStyle(color: Colors.white.withOpacity(.65))),
       ...totals.entries.map((e) {
         final pct = totalDailySpent == 0.0 ? 0.0 : (e.value / totalDailySpent * 100.0);
-        return Card(child: ListTile(title: Text(e.key), subtitle: LinearProgressIndicator(value: totalDailySpent == 0.0 ? 0.0 : (e.value / totalDailySpent).clamp(0.0, 1.0).toDouble()), trailing: Text('${pct.toStringAsFixed(0)}%')));
+        return Card(child: ListTile(
+          title: Text(e.key),
+          subtitle: LinearProgressIndicator(value: totalDailySpent == 0.0 ? 0.0 : (e.value / totalDailySpent).clamp(0.0, 1.0).toDouble()),
+          trailing: Text('${pct.toStringAsFixed(0)}%'),
+        ));
       }),
     ]));
   }
@@ -505,20 +600,50 @@ class _HomePageState extends State<HomePage> {
     const SizedBox(height: 12),
     _field(goalName, 'Nombre de la meta', Icons.flag_outlined),
     const SizedBox(height: 12),
-    _field(goalAmount, 'Monto objetivo USD', Icons.savings, type: TextInputType.number),
+    _field(goalAmount, 'Monto objetivo', Icons.savings, type: TextInputType.number),
     const SizedBox(height: 14),
-    card(goalName.text.isEmpty ? 'Meta' : goalName.text, 'Objetivo: USD ${goalAmount.text}', Icons.emoji_events_outlined, const Color(0xfffacc15)),
+    card(goalName.text.isEmpty ? 'Meta' : goalName.text, 'Objetivo: ${goalAmount.text}', Icons.emoji_events_outlined, const Color(0xfffacc15)),
   ]));
 
   Widget monthSelector() => Row(children: [
-    Expanded(child: DropdownButtonFormField<int>(value: month, decoration: const InputDecoration(labelText: 'Mes'), items: List.generate(12, (i) => DropdownMenuItem(value: i + 1, child: Text(monthNames[i]))), onChanged: (v) { if (v != null) { setState(() { month = v; selectedDay = selectedDay.clamp(1, DateUtils.getDaysInMonth(year, month)).toInt(); }); loadMonth(); } })),
+    Expanded(child: DropdownButtonFormField<int>(
+      value: month,
+      decoration: const InputDecoration(labelText: 'Mes'),
+      items: List.generate(12, (i) => DropdownMenuItem(value: i + 1, child: Text(monthNames[i]))),
+      onChanged: (v) {
+        if (v != null) {
+          setState(() {
+            month = v;
+            selectedDay = selectedDay.clamp(1, DateUtils.getDaysInMonth(year, month)).toInt();
+          });
+          loadMonth();
+        }
+      },
+    )),
     const SizedBox(width: 12),
-    Expanded(child: DropdownButtonFormField<int>(value: year, decoration: const InputDecoration(labelText: 'Año'), items: List.generate(6, (i) => DropdownMenuItem(value: DateTime.now().year + i, child: Text('${DateTime.now().year + i}'))), onChanged: (v) { if (v != null) { setState(() { year = v; selectedDay = selectedDay.clamp(1, DateUtils.getDaysInMonth(year, month)).toInt(); }); loadMonth(); } })),
+    Expanded(child: DropdownButtonFormField<int>(
+      value: year,
+      decoration: const InputDecoration(labelText: 'Año'),
+      items: List.generate(6, (i) => DropdownMenuItem(value: DateTime.now().year + i, child: Text('${DateTime.now().year + i}'))),
+      onChanged: (v) {
+        if (v != null) {
+          setState(() {
+            year = v;
+            selectedDay = selectedDay.clamp(1, DateUtils.getDaysInMonth(year, month)).toInt();
+          });
+          loadMonth();
+        }
+      },
+    )),
   ]);
 
   Widget memeCard() => Container(
     padding: const EdgeInsets.all(18),
-    decoration: BoxDecoration(color: memeColor.withOpacity(.13), borderRadius: BorderRadius.circular(24), border: Border.all(color: memeColor.withOpacity(.45))),
+    decoration: BoxDecoration(
+      color: memeColor.withOpacity(.13),
+      borderRadius: BorderRadius.circular(24),
+      border: Border.all(color: memeColor.withOpacity(.45)),
+    ),
     child: Row(children: [
       Text(memeEmoji, style: const TextStyle(fontSize: 56)),
       const SizedBox(width: 14),
@@ -532,8 +657,20 @@ class _HomePageState extends State<HomePage> {
 
   Widget card(String title, String value, IconData icon, Color color) => Container(
     padding: const EdgeInsets.all(18),
-    decoration: BoxDecoration(color: Colors.white.withOpacity(.06), borderRadius: BorderRadius.circular(24), border: Border.all(color: color.withOpacity(.35))),
-    child: Row(children: [Icon(icon, color: color, size: 34), const SizedBox(width: 14), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: TextStyle(color: Colors.white.withOpacity(.7))), const SizedBox(height: 4), Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold))]))]),
+    decoration: BoxDecoration(
+      color: Colors.white.withOpacity(.06),
+      borderRadius: BorderRadius.circular(24),
+      border: Border.all(color: color.withOpacity(.35)),
+    ),
+    child: Row(children: [
+      Icon(icon, color: color, size: 34),
+      const SizedBox(width: 14),
+      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(title, style: TextStyle(color: Colors.white.withOpacity(.7))),
+        const SizedBox(height: 4),
+        Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+      ])),
+    ]),
   );
 
   String money(double n) => NumberFormat.currency(locale: 'es_AR', symbol: 'ARS ', decimalDigits: 0).format(n);
